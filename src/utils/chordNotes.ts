@@ -40,7 +40,8 @@ function parseChord(chordId: string): { root: string; quality: string } {
   const root = rootMatch[1];
   const rest = base.slice(root.length);
 
-  const quality = QUALITY_KEYS.find((q) => rest === q) ?? 'maj';
+  // Match a known quality at the start of the rest (handles things like "m(no5)")
+  const quality = QUALITY_KEYS.find((q) => rest.startsWith(q)) ?? 'maj';
   return { root, quality };
 }
 

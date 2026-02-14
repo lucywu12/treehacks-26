@@ -1,12 +1,14 @@
 import { AnimatePresence } from 'framer-motion';
 import type { ChordGraphState } from '../../types/chord';
 import { GlowDefs } from '../GlowDefs/GlowDefs';
+import { getChordNotes } from '../../utils/chordNotes';
 import { ChordNodeComponent } from '../ChordNode/ChordNode';
 import { ChordEdge } from '../ChordEdge/ChordEdge';
 
 interface ChordGraphProps {
   state: ChordGraphState;
   rawChord?: any;
+  displayOverride?: { chordId?: string; notes?: string[] } | null;
 }
 
 const VIEWBOX_W = 900;
@@ -32,7 +34,7 @@ function getAbsPos(slot: SlotId) {
   };
 }
 
-export function ChordGraph({ state, rawChord }: ChordGraphProps) {
+export function ChordGraph({ state, rawChord, displayOverride }: ChordGraphProps) {
   const { current, previous, next } = state;
 
   // Build a flat list of all nodes with their target positions and roles
@@ -43,7 +45,18 @@ export function ChordGraph({ state, rawChord }: ChordGraphProps) {
       role: 'previous' as const,
       notesOverride: undefined,
     })),
-    { node: current, slot: 'center' as SlotId, role: 'current' as const, notesOverride: rawChord?.notes },
+    // compute center notes and label: prefer displayOverride, then rawChord.notes, then state's stored notes, then derive from chordId
+    (() => {
+      const nameOverride = displayOverride?.chordId;
+      const rawNotes = rawChord?.notes as string[] | undefined;
+      const stateNotes = (current as any)?.notes as string[] | undefined;
+      const derived = getChordNotes(current.chordId || '');
+      const centerNotes = (displayOverride?.notes && displayOverride.notes.length)
+        ? displayOverride.notes
+        : (rawNotes && rawNotes.length) ? rawNotes : (stateNotes && stateNotes.length) ? stateNotes : derived;
+      const nodeForCenter = nameOverride ? { ...current, chordId: nameOverride } : current;
+      return { node: nodeForCenter, slot: 'center' as SlotId, role: 'current' as const, notesOverride: centerNotes };
+    })(),
     ...next.map((node, i) => ({
       node,
       slot: `next-${i}` as SlotId,
