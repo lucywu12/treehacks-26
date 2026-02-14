@@ -1,6 +1,8 @@
 const CHROMATIC = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'] as const;
 
-const ENHARMONIC: Record<string, string> = {
+type ChromaticNote = typeof CHROMATIC[number];
+
+const ENHARMONIC: Record<string, ChromaticNote> = {
   Db: 'C#',
   Eb: 'D#',
   Fb: 'E',
@@ -40,8 +42,8 @@ function parseChord(chordId: string): { root: string; quality: string } {
   return { root, quality };
 }
 
-function normalizeNote(note: string): string {
-  return ENHARMONIC[note] ?? note;
+function normalizeNote(note: string): ChromaticNote {
+  return (ENHARMONIC[note] ?? note) as ChromaticNote;
 }
 
 export function getChordNotes(chordId: string): string[] {
