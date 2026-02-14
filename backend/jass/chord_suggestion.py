@@ -11,16 +11,21 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
-from chroma_index import chroma_bits_to_notes, filter_slash_suggestions
-from tis_index import TISIndex
-from tonal_tension import DEFAULT_WEIGHTS, parse_key
-from tonal_tension.model import suggest_next_chords as _suggest_next_chords
+from .chroma_index import chroma_bits_to_notes, filter_slash_suggestions
+from .tis_index import TISIndex
+from .tonal_tension import DEFAULT_WEIGHTS, parse_key
+from .tonal_tension.model import suggest_next_chords as _suggest_next_chords
 
 
 def _load_index(index: str | Path | TISIndex) -> TISIndex:
     if isinstance(index, TISIndex):
         return index
-    return TISIndex.from_npz(Path(index))
+    index_path = Path(index)
+    if not index_path.is_absolute() and not index_path.exists():
+        candidate = Path(__file__).resolve().parent / index_path
+        if candidate.exists():
+            index_path = candidate
+    return TISIndex.from_npz(index_path)
 
 
 def suggest_chords(
@@ -119,5 +124,3 @@ def suggest_chords(
         "results": results,
         "meta": idx.meta,
     }
-
-
