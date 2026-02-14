@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import type { ChordGraphState } from '../types/chord';
+import type { ChordGraphState, HistoryEntry } from '../types/chord';
 import type { ChordService } from '../services/chordService';
 import { createMockChordService } from '../services/mockChordService';
 
@@ -10,12 +10,16 @@ export function useChordProgression(service?: ChordService) {
   const [state, setState] = useState<ChordGraphState | null>(
     serviceRef.current.getState()
   );
+  const [history, setHistory] = useState<HistoryEntry[]>(
+    serviceRef.current.getHistory()
+  );
 
   useEffect(() => {
     const svc = serviceRef.current;
     const unsub = svc.subscribe((event) => {
       if (event.type === 'CHORD_CHANGE') {
         setState(event.payload);
+        setHistory([...svc.getHistory()]);
       } else if (event.type === 'RESET') {
         setState(null);
       }
@@ -28,6 +32,7 @@ export function useChordProgression(service?: ChordService) {
 
   return {
     state,
+    history,
     triggerNext: (index?: number) => serviceRef.current.triggerNext(index),
     startAutoPlay: (ms?: number) => serviceRef.current.startAutoPlay(ms),
     stopAutoPlay: () => serviceRef.current.stopAutoPlay(),

@@ -1,5 +1,7 @@
 import { motion } from 'framer-motion';
 import type { ChordNode as ChordNodeType } from '../../types/chord';
+import { getChordNotes } from '../../utils/chordNotes';
+import { OrbitingDots } from './OrbitingDots';
 
 interface ChordNodeProps {
   node: ChordNodeType;
@@ -44,6 +46,7 @@ const ROLE_CONFIG = {
 export function ChordNodeComponent({ node, x, y, role }: ChordNodeProps) {
   const config = ROLE_CONFIG[role];
   const opacity = role === 'previous' ? 0.7 : 1;
+  const notes = getChordNotes(node.chordId);
 
   return (
     <motion.g
@@ -92,6 +95,9 @@ export function ChordNodeComponent({ node, x, y, role }: ChordNodeProps) {
         filter={config.filter}
         opacity={node.probability ?? 1}
       />
+
+      {/* Orbiting note dots */}
+      <OrbitingDots notes={notes} parentRadius={config.radius} role={role} />
 
       {/* Chord label */}
       <text

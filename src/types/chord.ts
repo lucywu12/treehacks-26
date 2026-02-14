@@ -12,6 +12,13 @@ export interface ChordGraphState {
   next: ChordNode[];
 }
 
+export interface HistoryEntry {
+  current: ChordNode;
+  next: ChordNode[];
+  chosenIndex: number;
+  timestamp: number;
+}
+
 export type ChordEvent =
   | { type: 'CHORD_CHANGE'; payload: ChordGraphState }
   | { type: 'RESET' };

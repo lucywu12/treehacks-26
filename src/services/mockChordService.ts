@@ -1,4 +1,4 @@
-import type { ChordNode, ChordGraphState, ChordEvent } from '../types/chord';
+import type { ChordNode, ChordGraphState, ChordEvent, HistoryEntry } from '../types/chord';
 import type { ChordService, ChordEventListener } from './chordService';
 
 const CHORD_POOL = [
@@ -27,6 +27,7 @@ function pickRandom(exclude: string, count: number): ChordNode[] {
 export function createMockChordService(): ChordService {
   const listeners = new Set<ChordEventListener>();
   let autoPlayTimer: ReturnType<typeof setInterval> | null = null;
+  const history: HistoryEntry[] = [];
 
   const initialCurrent = makeNode('Cmaj', 1);
   let state: ChordGraphState = {
@@ -42,6 +43,13 @@ export function createMockChordService(): ChordService {
   function triggerNext(chosenIndex = 0) {
     const idx = Math.min(chosenIndex, state.next.length - 1);
     const chosen = state.next[idx];
+
+    history.push({
+      current: state.current,
+      next: [...state.next],
+      chosenIndex: idx,
+      timestamp: Date.now(),
+    });
 
     const newPrevious = [state.current, ...state.previous].slice(0, 3);
     const newNext = pickRandom(chosen.chordId, 3);
@@ -62,6 +70,9 @@ export function createMockChordService(): ChordService {
     },
     getState() {
       return state;
+    },
+    getHistory() {
+      return history;
     },
     triggerNext,
     startAutoPlay(intervalMs = 3000) {
