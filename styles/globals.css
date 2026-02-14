@@ -1,0 +1,15 @@
+:root {
+  --bg: #ffffff;
+  --muted: #6b7280;
+}
+
+html, body, #__next {
+  height: 100%;
+  margin: 0;
+  background: var(--bg);
+  color: #111827;
+}
+
+* { box-sizing: border-box; }
+
+h1 { font-weight: 700; }
