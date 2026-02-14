@@ -1,11 +1,14 @@
 import { AnimatePresence } from 'framer-motion';
 import type { ChordGraphState } from '../../types/chord';
 import { GlowDefs } from '../GlowDefs/GlowDefs';
+import { getChordNotes } from '../../utils/chordNotes';
 import { ChordNodeComponent } from '../ChordNode/ChordNode';
 import { ChordEdge } from '../ChordEdge/ChordEdge';
 
 interface ChordGraphProps {
   state: ChordGraphState;
+  rawChord?: any;
+  displayOverride?: { chordId?: string; notes?: string[] } | null;
 }
 
 const VIEWBOX_W = 900;
@@ -31,7 +34,7 @@ function getAbsPos(slot: SlotId) {
   };
 }
 
-export function ChordGraph({ state }: ChordGraphProps) {
+export function ChordGraph({ state, rawChord, displayOverride }: ChordGraphProps) {
   const { current, previous, next } = state;
 
   // Build a flat list of all nodes with their target positions and roles
@@ -40,12 +43,25 @@ export function ChordGraph({ state }: ChordGraphProps) {
       node,
       slot: `prev-${i}` as SlotId,
       role: 'previous' as const,
+      notesOverride: undefined,
     })),
-    { node: current, slot: 'center' as SlotId, role: 'current' as const },
+    // compute center notes and label: prefer displayOverride, then rawChord.notes, then state's stored notes, then derive from chordId
+    (() => {
+      const nameOverride = displayOverride?.chordId;
+      const rawNotes = rawChord?.notes as string[] | undefined;
+      const stateNotes = (current as any)?.notes as string[] | undefined;
+      const derived = getChordNotes(current.chordId || '');
+      const centerNotes = (displayOverride?.notes && displayOverride.notes.length)
+        ? displayOverride.notes
+        : (rawNotes && rawNotes.length) ? rawNotes : (stateNotes && stateNotes.length) ? stateNotes : derived;
+      const nodeForCenter = nameOverride ? { ...current, chordId: nameOverride } : current;
+      return { node: nodeForCenter, slot: 'center' as SlotId, role: 'current' as const, notesOverride: centerNotes };
+    })(),
     ...next.map((node, i) => ({
       node,
       slot: `next-${i}` as SlotId,
       role: 'next' as const,
+      notesOverride: undefined,
     })),
   ];
 
@@ -98,7 +114,7 @@ export function ChordGraph({ state }: ChordGraphProps) {
 
       {/* Nodes layer (rendered after edges so they appear on top) */}
       <AnimatePresence mode="popLayout">
-        {allNodes.map(({ node, slot, role }) => {
+        {allNodes.map(({ node, slot, role, notesOverride }: any) => {
           const pos = getAbsPos(slot);
           return (
             <ChordNodeComponent
@@ -107,6 +123,7 @@ export function ChordGraph({ state }: ChordGraphProps) {
               x={pos.x}
               y={pos.y}
               role={role}
+              notesOverride={notesOverride}
             />
           );
         })}

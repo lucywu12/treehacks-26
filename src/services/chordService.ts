@@ -10,4 +10,5 @@ export interface ChordService {
   startAutoPlay(intervalMs?: number): void;
   stopAutoPlay(): void;
   destroy(): void;
+  connect?: (url?: string) => void;
 }

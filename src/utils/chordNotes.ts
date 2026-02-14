@@ -32,13 +32,16 @@ const QUALITY_INTERVALS: Record<string, number[]> = {
 const QUALITY_KEYS = Object.keys(QUALITY_INTERVALS).sort((a, b) => b.length - a.length);
 
 function parseChord(chordId: string): { root: string; quality: string } {
+  // Normalize: strip slash-bass parts (e.g., Am/C -> Am)
+  const base = String(chordId ?? '').split('/')[0].trim();
   // Root is 1 or 2 chars: letter + optional # or b
-  const rootMatch = chordId.match(/^([A-G][#b]?)/);
+  const rootMatch = base.match(/^([A-G][#b]?)/);
   if (!rootMatch) return { root: 'C', quality: 'maj' };
   const root = rootMatch[1];
-  const rest = chordId.slice(root.length);
+  const rest = base.slice(root.length);
 
-  const quality = QUALITY_KEYS.find((q) => rest === q) ?? 'maj';
+  // Match a known quality at the start of the rest (handles things like "m(no5)")
+  const quality = QUALITY_KEYS.find((q) => rest.startsWith(q)) ?? 'maj';
   return { root, quality };
 }
 

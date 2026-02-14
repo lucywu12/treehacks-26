@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import './index.css';
 import { useChordProgression } from './hooks/useChordProgression';
 import { ChordGraph } from './components/ChordGraph/ChordGraph';
 import { DebugPanel } from './components/DebugPanel/DebugPanel';
 import { HistoryGraph } from './components/HistoryGraph/HistoryGraph';
+import { createWsChordService } from './services/wsChordService';
 
 type Tab = 'live' | 'history';
 
@@ -23,27 +24,48 @@ const tabStyle = (active: boolean): React.CSSProperties => ({
 });
 
 function App() {
-  const { state, history, triggerNext, startAutoPlay, stopAutoPlay } = useChordProgression();
+  const [rawChord, setRawChord] = useState<any>(null);
+  const [displayOverride, setDisplayOverride] = useState<{ chordId?: string; notes?: string[] } | null>(null);
+
+  // Use local WebSocket backend for chord input (no browser MIDI)
+  const service = useMemo(() => {
+    const ws = createWsChordService(undefined, (d) => {
+      console.log('RAW CHORD FROM WS:', d);
+      setRawChord(d);
+      try {
+        const chordObj = d?.chord ?? d;
+        const name = typeof chordObj?.name === 'string' && chordObj.name ? chordObj.name : (typeof chordObj?.chord === 'string' ? chordObj.chord : undefined);
+        const notes = Array.isArray(chordObj?.notes) ? chordObj.notes : undefined;
+        setDisplayOverride({ chordId: name, notes });
+      } catch (_) {
+        setDisplayOverride(null);
+      }
+    });
+    try { ws.connect?.(); } catch (_) {}
+    return ws as any;
+  }, []);
+
+  const { state, history, triggerNext, startAutoPlay, stopAutoPlay } = useChordProgression(service as any);
+
   const [activeTab, setActiveTab] = useState<Tab>('live');
 
-  if (!state) {
-    return (
-      <div style={{
-        width: '100vw',
-        height: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: 'rgba(240, 230, 211, 0.4)',
-        fontSize: 14,
-      }}>
-        Waiting for chord input...
-      </div>
-    );
-  }
+  // Always render the main UI; use a lightweight fallback state until a chord arrives
+  const renderState = state ?? {
+    current: { id: 'idle-1', chordId: '—', probability: 1 },
+    previous: [],
+    next: [],
+  };
 
   return (
     <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
+      {/* Raw chord debug overlay */}
+      <div style={{position: 'fixed', right: 16, top: 80, zIndex: 200, background: 'rgba(0,0,0,0.6)', color: '#fff', padding: 8, borderRadius: 8, fontSize: 12, maxWidth: 320}}>
+        <div style={{fontWeight: 700, marginBottom: 6}}>RAW CHORD</div>
+        <pre style={{whiteSpace: 'pre-wrap', margin: 0}}>{rawChord ? JSON.stringify(rawChord, null, 2) : '—'}</pre>
+        <div style={{marginTop: 8}}>
+          <div style={{fontSize:12}}>Using local WebSocket backend (connect to ws://localhost:8000/ws)</div>
+        </div>
+      </div>
       {/* Tab bar */}
       <div style={{
         position: 'fixed',
@@ -70,9 +92,9 @@ function App() {
       {/* Content */}
       {activeTab === 'live' ? (
         <>
-          <ChordGraph state={state} />
+          <ChordGraph state={renderState} rawChord={rawChord} displayOverride={displayOverride} />
           <DebugPanel
-            state={state}
+            state={renderState}
             onTriggerNext={triggerNext}
             onStartAutoPlay={startAutoPlay}
             onStopAutoPlay={stopAutoPlay}

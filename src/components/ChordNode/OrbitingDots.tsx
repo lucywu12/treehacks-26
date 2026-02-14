@@ -14,8 +14,8 @@ const ROLE_DOT_CONFIG = {
 
 export function OrbitingDots({ notes, parentRadius, role }: OrbitingDotsProps) {
   const { dotRadius, orbitOffset, color, fontSize } = ROLE_DOT_CONFIG[role];
-  const orbitRadius = parentRadius + orbitOffset;
-  const angleStep = 360 / notes.length;
+  const orbitRadius = (parentRadius ?? 20) + (orbitOffset ?? 16);
+  const angleStep = notes.length > 0 ? 360 / notes.length : 0;
 
   return (
     <motion.g
@@ -42,7 +42,7 @@ export function OrbitingDots({ notes, parentRadius, role }: OrbitingDotsProps) {
             style={{ x: cx, y: cy }}
           >
             <circle
-              r={dotRadius}
+              r={dotRadius ?? 6}
               fill={color}
               opacity={0.85}
               filter="url(#glow-edge)"

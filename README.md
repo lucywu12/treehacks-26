@@ -4,8 +4,6 @@ This template provides a minimal setup to get React working in Vite with HMR and
 
 Currently, two official plugins are available:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
 ## React Compiler
 
@@ -71,3 +69,36 @@ export default defineConfig([
   },
 ])
 ```
+
+## Local WebSocket setup
+
+Files added:
+
+- `backend/pianomidi/ws_server.py` — FastAPI WebSocket server that reads MIDI (via `python-rtmidi`/`pychord`) and broadcasts JSON chord events on `/ws`.
+- `hooks/useWsChord.js` — frontend hook that connects to `/ws` and returns the latest chord object.
+
+Install dependencies for the backend:
+
+```bash
+pip install fastapi uvicorn[standard] python-rtmidi pychord
+```
+
+Run the server (it opens the first MIDI input port it finds):
+
+```bash
+python backend/pianomidi/ws_server.py
+```
+
+The frontend hook defaults to `ws://localhost:8000/ws` (or `wss://HOST/ws` when served over HTTPS). In your app you can use it like:
+
+```js
+import useWsChord from '../hooks/useWsChord'
+
+function Live() {
+  const chord = useWsChord()
+  return <pre>{chord ? JSON.stringify(chord, null, 2) : 'Waiting for MIDI...'}</pre>
+}
+```
+
+Deployment note: Vercel does not support long-lived WebSocket servers. To host the WebSocket backend for remote access, use a provider that supports persistent servers (e.g., Render, Railway, Fly, or a VPS) and set the frontend to connect to `wss://your-backend.example.com/ws`.
+

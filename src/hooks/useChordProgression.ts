@@ -14,6 +14,16 @@ export function useChordProgression(service?: ChordService) {
     serviceRef.current.getHistory()
   );
 
+  // if a different service instance is passed later, swap to it
+  useEffect(() => {
+    if (service && serviceRef.current !== service) {
+      try { serviceRef.current.destroy(); } catch (e) {}
+      serviceRef.current = service;
+      setState(serviceRef.current.getState());
+      setHistory([...serviceRef.current.getHistory()]);
+    }
+  }, [service]);
+
   useEffect(() => {
     const svc = serviceRef.current;
     const unsub = svc.subscribe((event) => {
