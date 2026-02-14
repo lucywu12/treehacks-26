@@ -5,6 +5,7 @@ import { ChordGraph } from './components/ChordGraph/ChordGraph';
 import { DebugPanel } from './components/DebugPanel/DebugPanel';
 import { HistoryGraph } from './components/HistoryGraph/HistoryGraph';
 import { createWsChordService } from './services/wsChordService';
+import { createClientMidiService } from './services/clientMidiService';
 
 type Tab = 'live' | 'history';
 
@@ -25,20 +26,21 @@ const tabStyle = (active: boolean): React.CSSProperties => ({
 
 function App() {
   const [rawChord, setRawChord] = useState<any>(null);
+  const [sendToBackend, setSendToBackend] = useState(false);
+  const [backendUrl, setBackendUrl] = useState('/api/log-chord');
 
-  const wsService = useMemo(() => {
-    const svc = createWsChordService(undefined, (d) => {
-      console.log('RAW CHORD FROM WS:', d);
-      setRawChord(d);
-    });
-    // connect to default ws://localhost:8000/ws
-    if (typeof window !== 'undefined') {
-      svc.connect();
+  const service = useMemo(() => {
+    if (typeof window !== 'undefined' && 'requestMIDIAccess' in navigator) {
+      const svc = createClientMidiService(sendToBackend ? backendUrl : undefined);
+      try { svc.connect(); } catch (_) {}
+      return svc as any;
     }
-    return svc;
-  }, []);
+    const ws = createWsChordService(undefined, (d) => { console.log('RAW CHORD FROM WS:', d); setRawChord(d); });
+    try { ws.connect(); } catch (_) {}
+    return ws as any;
+  }, [sendToBackend, backendUrl]);
 
-  const { state, history, triggerNext, startAutoPlay, stopAutoPlay } = useChordProgression(wsService as any);
+  const { state, history, triggerNext, startAutoPlay, stopAutoPlay } = useChordProgression(service as any);
 
   const [activeTab, setActiveTab] = useState<Tab>('live');
 
@@ -64,6 +66,17 @@ function App() {
       <div style={{position: 'fixed', right: 16, top: 80, zIndex: 200, background: 'rgba(0,0,0,0.6)', color: '#fff', padding: 8, borderRadius: 8, fontSize: 12, maxWidth: 320}}>
         <div style={{fontWeight: 700, marginBottom: 6}}>RAW CHORD</div>
         <pre style={{whiteSpace: 'pre-wrap', margin: 0}}>{rawChord ? JSON.stringify(rawChord, null, 2) : '—'}</pre>
+        <div style={{marginTop: 8}}>
+          <label style={{display:'flex', gap:8, alignItems:'center'}}>
+            <input type="checkbox" checked={sendToBackend} onChange={(e) => setSendToBackend(e.target.checked)} />
+            <span style={{fontSize:12}}>Send to backend</span>
+          </label>
+          {sendToBackend && (
+            <div style={{marginTop:6}}>
+              <input value={backendUrl} onChange={(e) => setBackendUrl(e.target.value)} style={{width:'100%', fontSize:12, padding:6, borderRadius:6, border:'1px solid rgba(255,255,255,0.12)'}} />
+            </div>
+          )}
+        </div>
       </div>
       {/* Tab bar */}
       <div style={{

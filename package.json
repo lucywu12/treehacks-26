@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@tonaljs/tonal": "^4.7.0",
     "3d-force-graph": "^1.79.1",
     "d3-dag": "^1.1.0",
     "d3-force": "^3.0.0",
