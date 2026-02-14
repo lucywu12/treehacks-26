@@ -1,11 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import './index.css';
 import { useChordProgression } from './hooks/useChordProgression';
 import { ChordGraph } from './components/ChordGraph/ChordGraph';
 import { DebugPanel } from './components/DebugPanel/DebugPanel';
 import { HistoryGraph } from './components/HistoryGraph/HistoryGraph';
 import { createWsChordService } from './services/wsChordService';
-import { createClientMidiService } from './services/clientMidiService';
 
 type Tab = 'live' | 'history';
 
@@ -26,39 +25,41 @@ const tabStyle = (active: boolean): React.CSSProperties => ({
 
 function App() {
   const [rawChord, setRawChord] = useState<any>(null);
-  const [sendToBackend, setSendToBackend] = useState(false);
-  const [backendUrl, setBackendUrl] = useState('/api/log-chord');
 
+  // Use local WebSocket backend for chord input (no browser MIDI)
   const service = useMemo(() => {
-    if (typeof window !== 'undefined' && 'requestMIDIAccess' in navigator) {
-      const svc = createClientMidiService(sendToBackend ? backendUrl : undefined);
-      try { svc.connect?.(); } catch (_) {}
-      return svc as any;
-    }
     const ws = createWsChordService(undefined, (d) => { console.log('RAW CHORD FROM WS:', d); setRawChord(d); });
     try { ws.connect?.(); } catch (_) {}
     return ws as any;
-  }, [sendToBackend, backendUrl]);
+  }, []);
 
   const { state, history, triggerNext, startAutoPlay, stopAutoPlay } = useChordProgression(service as any);
 
   const [activeTab, setActiveTab] = useState<Tab>('live');
 
-  if (!state) {
-    return (
-      <div style={{
-        width: '100vw',
-        height: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: 'rgba(240, 230, 211, 0.4)',
-        fontSize: 14,
-      }}>
-        Waiting for chord input...
-      </div>
-    );
-  }
+  // Persist last seen chord in localStorage and restore when app loads.
+  useEffect(() => {
+    try {
+      if (state?.current) {
+        localStorage.setItem('lastChord', JSON.stringify(state.current));
+      }
+    } catch (e) {}
+  }, [state]);
+
+  const saved = (() => {
+    try {
+      const s = localStorage.getItem('lastChord');
+      if (s) return JSON.parse(s);
+    } catch (e) {}
+    return null;
+  })();
+
+  // Always render the main UI; use saved last chord or a lightweight fallback until a chord arrives
+  const renderState = state ?? (saved ? { current: saved, previous: [], next: [] } : {
+    current: { id: 'idle-1', chordId: '—', probability: 1 },
+    previous: [],
+    next: [],
+  });
 
   return (
     <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
@@ -67,15 +68,7 @@ function App() {
         <div style={{fontWeight: 700, marginBottom: 6}}>RAW CHORD</div>
         <pre style={{whiteSpace: 'pre-wrap', margin: 0}}>{rawChord ? JSON.stringify(rawChord, null, 2) : '—'}</pre>
         <div style={{marginTop: 8}}>
-          <label style={{display:'flex', gap:8, alignItems:'center'}}>
-            <input type="checkbox" checked={sendToBackend} onChange={(e) => setSendToBackend(e.target.checked)} />
-            <span style={{fontSize:12}}>Send to backend</span>
-          </label>
-          {sendToBackend && (
-            <div style={{marginTop:6}}>
-              <input value={backendUrl} onChange={(e) => setBackendUrl(e.target.value)} style={{width:'100%', fontSize:12, padding:6, borderRadius:6, border:'1px solid rgba(255,255,255,0.12)'}} />
-            </div>
-          )}
+          <div style={{fontSize:12}}>Using local WebSocket backend (connect to ws://localhost:8000/ws)</div>
         </div>
       </div>
       {/* Tab bar */}
@@ -104,9 +97,9 @@ function App() {
       {/* Content */}
       {activeTab === 'live' ? (
         <>
-          <ChordGraph state={state} />
+          <ChordGraph state={renderState} rawChord={rawChord} />
           <DebugPanel
-            state={state}
+            state={renderState}
             onTriggerNext={triggerNext}
             onStartAutoPlay={startAutoPlay}
             onStopAutoPlay={stopAutoPlay}

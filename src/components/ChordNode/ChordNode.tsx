@@ -8,6 +8,7 @@ interface ChordNodeProps {
   x: number;
   y: number;
   role: 'previous' | 'current' | 'next';
+  notesOverride?: string[] | undefined;
 }
 
 const ROLE_CONFIG = {
@@ -43,10 +44,10 @@ const ROLE_CONFIG = {
   },
 };
 
-export function ChordNodeComponent({ node, x, y, role }: ChordNodeProps) {
-  const config = ROLE_CONFIG[role];
+export function ChordNodeComponent({ node, x, y, role, notesOverride }: ChordNodeProps) {
+  const config = ROLE_CONFIG[role] ?? ROLE_CONFIG.current;
   const opacity = role === 'previous' ? 0.7 : 1;
-  const notes = getChordNotes(node.chordId);
+  const notes = notesOverride && notesOverride.length ? notesOverride : getChordNotes(node.chordId);
 
   return (
     <motion.g
@@ -69,13 +70,13 @@ export function ChordNodeComponent({ node, x, y, role }: ChordNodeProps) {
       {/* Outer glow ring */}
       {role === 'current' && (
         <motion.circle
-          r={config.radius + 12}
+          r={(config.radius ?? 24) + 12}
           fill="none"
           stroke="#f5c54230"
           strokeWidth={1}
           filter="url(#glow-edge)"
           animate={{
-            r: [config.radius + 10, config.radius + 16, config.radius + 10],
+            r: [(config.radius ?? 24) + 10, (config.radius ?? 24) + 16, (config.radius ?? 24) + 10],
             opacity: [0.3, 0.6, 0.3],
           }}
           transition={{
@@ -88,7 +89,7 @@ export function ChordNodeComponent({ node, x, y, role }: ChordNodeProps) {
 
       {/* Main circle */}
       <circle
-        r={config.radius}
+        r={config.radius ?? 20}
         fill={config.fill}
         stroke={config.stroke}
         strokeWidth={config.strokeWidth}
@@ -99,17 +100,20 @@ export function ChordNodeComponent({ node, x, y, role }: ChordNodeProps) {
       {/* Orbiting note dots */}
       <OrbitingDots notes={notes} parentRadius={config.radius} role={role} />
 
-      {/* Chord label */}
+      {/* Chord label: name on top, notes below */}
       <text
         textAnchor="middle"
         dominantBaseline="central"
         fill={config.labelColor}
-        fontSize={config.fontSize}
-        fontWeight={config.fontWeight}
         fontFamily="'Inter', system-ui, sans-serif"
         style={{ pointerEvents: 'none', userSelect: 'none' }}
       >
-        {node.chordId}
+        <tspan x={0} dy={-(config.fontSize ? config.fontSize * 0.6 : 8)} fontSize={config.fontSize} fontWeight={config.fontWeight}>
+          {node.chordId}
+        </tspan>
+        <tspan x={0} dy={(config.fontSize ? config.fontSize * 0.9 : 12)} fontSize={Math.max(9, (config.fontSize ?? 12) - 4)} fill={config.labelColor} opacity={0.9}>
+          {notes && notes.length ? notes.join(' ') : ''}
+        </tspan>
       </text>
     </motion.g>
   );

@@ -13,7 +13,22 @@ export function createWsChordService(defaultUrl?: string, onRaw?: (data: any) =>
     }
 
     const chordObj = msgData?.chord ?? msgData;
-    const name = chordObj?.name ?? (Array.isArray(chordObj?.notes) ? chordObj.notes.join(',') : String(chordObj));
+    // chordObj may be { name: 'Cmaj', notes: [...], chroma: [...] }
+    // or it may be { chord: 'Cmaj', notes: [...], ... } (detector output).
+    let name: string;
+    if (typeof chordObj === 'string') {
+      name = chordObj;
+    } else if (chordObj == null) {
+      name = '—';
+    } else if (typeof chordObj.name === 'string' && chordObj.name.length) {
+      name = chordObj.name;
+    } else if (typeof chordObj.chord === 'string' && chordObj.chord.length) {
+      name = chordObj.chord;
+    } else if (Array.isArray(chordObj.notes) && chordObj.notes.length) {
+      name = chordObj.notes.join(',');
+    } else {
+      name = '—';
+    }
 
     const newState: ChordGraphState = {
       current: { id: `${name}-1`, chordId: name, probability: 1 },
