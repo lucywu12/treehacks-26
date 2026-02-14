@@ -26,7 +26,7 @@ export function createClientMidiService(backendUrl?: string): ChordService {
   const history: HistoryEntry[] = [];
   let state: ChordGraphState | null = null;
 
-  let midiAccess: WebMidi.MIDIAccess | null = null;
+  let midiAccess: any = null;
   const heldNotes = new Set<number>();
   let timer: number | null = null;
 
@@ -69,8 +69,8 @@ export function createClientMidiService(backendUrl?: string): ChordService {
     }
   }
 
-  function onMidiMessage(event: WebMidi.MIDIMessageEvent) {
-    const [status, note, velocity] = event.data;
+  function onMidiMessage(event: any) {
+    const [status, note, velocity] = event.data as number[];
     const cmd = status & 0xf0;
     if (cmd === 0x90 && velocity > 0) {
       heldNotes.add(note);
@@ -82,15 +82,15 @@ export function createClientMidiService(backendUrl?: string): ChordService {
 
   function start() {
     if (!('requestMIDIAccess' in navigator)) return;
-    navigator.requestMIDIAccess().then((m) => {
+    navigator.requestMIDIAccess().then((m: any) => {
       midiAccess = m;
-      for (const input of Array.from(midiAccess.inputs.values())) {
-        input.onmidimessage = onMidiMessage as any;
+      for (const input of Array.from((midiAccess.inputs as any).values())) {
+        (input as any).onmidimessage = onMidiMessage as any;
       }
       // listen for new inputs
       midiAccess.onstatechange = () => {
-        for (const input of Array.from(midiAccess!.inputs.values())) {
-          input.onmidimessage = onMidiMessage as any;
+        for (const input of Array.from((midiAccess.inputs as any).values())) {
+          (input as any).onmidimessage = onMidiMessage as any;
         }
       };
       if (!timer) timer = window.setInterval(computeAndEmit, 120);
@@ -100,8 +100,8 @@ export function createClientMidiService(backendUrl?: string): ChordService {
   function stop() {
     if (timer) { clearInterval(timer); timer = null; }
     if (midiAccess) {
-      for (const input of Array.from(midiAccess.inputs.values())) {
-        input.onmidimessage = null as any;
+      for (const input of Array.from((midiAccess.inputs as any).values())) {
+        (input as any).onmidimessage = null as any;
       }
       midiAccess = null;
     }

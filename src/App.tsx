@@ -32,11 +32,11 @@ function App() {
   const service = useMemo(() => {
     if (typeof window !== 'undefined' && 'requestMIDIAccess' in navigator) {
       const svc = createClientMidiService(sendToBackend ? backendUrl : undefined);
-      try { svc.connect(); } catch (_) {}
+      try { svc.connect?.(); } catch (_) {}
       return svc as any;
     }
     const ws = createWsChordService(undefined, (d) => { console.log('RAW CHORD FROM WS:', d); setRawChord(d); });
-    try { ws.connect(); } catch (_) {}
+    try { ws.connect?.(); } catch (_) {}
     return ws as any;
   }, [sendToBackend, backendUrl]);
 

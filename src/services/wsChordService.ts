@@ -1,4 +1,4 @@
-import type { ChordNode, ChordGraphState, HistoryEntry } from '../types/chord';
+import type { ChordGraphState, HistoryEntry } from '../types/chord';
 import type { ChordService, ChordEventListener } from './chordService';
 
 export function createWsChordService(defaultUrl?: string, onRaw?: (data: any) => void): ChordService {
