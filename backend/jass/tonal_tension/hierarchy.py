@@ -5,7 +5,7 @@ from typing import Sequence
 
 import numpy as np
 
-from tis_index import angle, euclidean_distance
+from ..tis_index import angle, euclidean_distance
 
 
 @dataclass
@@ -128,4 +128,3 @@ def hierarchical_tension_last(
     for hp in parent_heads:
         total += euclidean_distance(ti, tis_list[hp])
     return float(total / len(parent_heads))
-

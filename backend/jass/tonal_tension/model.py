@@ -4,10 +4,10 @@ from typing import Sequence
 
 import numpy as np
 
-from chroma_index import chroma_bits_to_notes, filter_slash_suggestions
-from tis_index import TISIndex
-from tonal_tension.features import compute_features
-from tonal_tension.weights import DEFAULT_WEIGHTS
+from ..chroma_index import chroma_bits_to_notes, filter_slash_suggestions
+from ..tis_index import TISIndex
+from .features import compute_features
+from .weights import DEFAULT_WEIGHTS
 
 
 def compute_tension(

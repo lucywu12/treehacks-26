@@ -5,7 +5,7 @@ from typing import Sequence
 
 import numpy as np
 
-from tis_index import chroma_bits_to_tis, euclidean_distance
+from ..tis_index import chroma_bits_to_tis, euclidean_distance
 
 
 PC_DIST = np.zeros((12, 12), dtype=np.int32)
@@ -82,4 +82,3 @@ def voice_leading_tension(
 
     stability = float(np.sum(np.exp(-0.05 * chosen)))
     return -stability
-

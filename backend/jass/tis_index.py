@@ -8,7 +8,7 @@ from typing import Mapping, Sequence
 
 import numpy as np
 
-from chroma_index import (
+from .chroma_index import (
     CHROMA_LEN,
     ChromaInputError,
     bits_to_mask,

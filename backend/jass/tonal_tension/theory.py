@@ -4,7 +4,7 @@ from typing import Sequence
 
 import numpy as np
 
-from tis_index import chroma_bits_to_tis
+from ..tis_index import chroma_bits_to_tis
 
 
 PC_TO_IDX: dict[str, int] = {
@@ -128,4 +128,3 @@ def function_prototypes(root: str, mode: str = "major") -> dict[str, np.ndarray]
         quality = triad_map[deg]
         out[name] = chroma_bits_to_tis(triad_chroma(pc, quality))
     return out
-

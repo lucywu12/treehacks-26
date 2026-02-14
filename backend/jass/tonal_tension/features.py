@@ -4,12 +4,12 @@ from typing import Sequence
 
 import numpy as np
 
-from tis_index import TISIndex
-from tis_metrics import vectorized_angles
-from tonal_tension.dissonance import dissonance_tension_from_tis_norm
-from tonal_tension.hierarchy import harmonic_function_label_from_tis, hierarchical_tension_last
-from tonal_tension.theory import function_prototypes, key_tis
-from tonal_tension.voice_leading import voice_leading_tension
+from ..tis_index import TISIndex
+from ..tis_metrics import vectorized_angles
+from .dissonance import dissonance_tension_from_tis_norm
+from .hierarchy import harmonic_function_label_from_tis, hierarchical_tension_last
+from .theory import function_prototypes, key_tis
+from .voice_leading import voice_leading_tension
 
 
 def compute_features(
