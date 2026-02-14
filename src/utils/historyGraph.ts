@@ -6,6 +6,7 @@ export interface HistoryGraphNode extends ForceGraphNode {
   name: string;
   playCount: number;
   wasPlayed: boolean;
+  firstSeenStep: number;
 }
 
 export interface HistoryGraphLink extends ForceGraphLink {
@@ -24,7 +25,7 @@ export function buildHistoryGraph(history: HistoryEntry[]): HistoryGraphData {
   const nodeMap = new Map<string, HistoryGraphNode>();
   const linkMap = new Map<string, HistoryGraphLink>();
 
-  function ensureNode(chordId: string, wasPlayed: boolean) {
+  function ensureNode(chordId: string, wasPlayed: boolean, step: number) {
     const existing = nodeMap.get(chordId);
     if (existing) {
       if (wasPlayed) {
@@ -37,6 +38,7 @@ export function buildHistoryGraph(history: HistoryEntry[]): HistoryGraphData {
         name: chordId,
         playCount: wasPlayed ? 1 : 0,
         wasPlayed,
+        firstSeenStep: step,
       });
     }
   }
@@ -57,15 +59,16 @@ export function buildHistoryGraph(history: HistoryEntry[]): HistoryGraphData {
     }
   }
 
-  for (const entry of history) {
+  for (let step = 0; step < history.length; step++) {
+    const entry = history[step];
     const currentId = entry.current.chordId;
-    ensureNode(currentId, true);
+    ensureNode(currentId, true, step);
 
     for (let i = 0; i < entry.next.length; i++) {
       const nextId = entry.next[i].chordId;
       const isChosen = i === entry.chosenIndex;
 
-      ensureNode(nextId, isChosen);
+      ensureNode(nextId, isChosen, step + 1);
       ensureLink(currentId, nextId, isChosen);
     }
   }
@@ -74,7 +77,7 @@ export function buildHistoryGraph(history: HistoryEntry[]): HistoryGraphData {
   if (history.length > 0) {
     const last = history[history.length - 1];
     const finalChordId = last.next[last.chosenIndex].chordId;
-    ensureNode(finalChordId, true);
+    ensureNode(finalChordId, true, history.length);
   }
 
   return {

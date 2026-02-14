@@ -167,10 +167,15 @@ export function HistoryGraph({ history }: HistoryGraphProps) {
         const x = node.x ?? 0;
         const y = node.y ?? 0;
         graph.centerAt(x, y, 1000);
-        graph.zoom(3, 1000);
+        graph.zoom(2, 1000);
       })
-      .cooldownTicks(100)
-      .warmupTicks(50);
+      .d3Force('charge', null)
+      .d3Force('center', null)
+      .d3Force('x', null)
+      .d3Force('y', null)
+      .d3Force('link', null)
+      .cooldownTicks(0)
+      .warmupTicks(0);
 
     graph2DRef.current = graph;
   }, []);
@@ -220,9 +225,35 @@ export function HistoryGraph({ history }: HistoryGraphProps) {
   // Update graph data when history changes
   useEffect(() => {
     const data = buildHistoryGraph(history);
+
     if (mode === '3d' && graph3DRef.current) {
       graph3DRef.current.graphData(data);
     } else if (mode === '2d' && graph2DRef.current) {
+      // For 2D: assign fixed positions based on temporal order
+      const stepGroups = new Map<number, HistoryGraphNode[]>();
+
+      // Group nodes by their first seen step
+      data.nodes.forEach((node) => {
+        const step = node.firstSeenStep;
+        if (!stepGroups.has(step)) {
+          stepGroups.set(step, []);
+        }
+        stepGroups.get(step)!.push(node);
+      });
+
+      // Assign positions: x = step, y = index within step
+      const spacing = 250;
+      const verticalSpacing = 100;
+
+      data.nodes.forEach((node) => {
+        const group = stepGroups.get(node.firstSeenStep)!;
+        const indexInGroup = group.indexOf(node);
+        const groupSize = group.length;
+
+        node.fx = node.firstSeenStep * spacing;
+        node.fy = (indexInGroup - (groupSize - 1) / 2) * verticalSpacing;
+      });
+
       graph2DRef.current.graphData(data);
     }
   }, [history, mode]);
