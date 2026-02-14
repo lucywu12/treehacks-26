@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import './index.css';
 import { useChordProgression } from './hooks/useChordProgression';
 import { ChordGraph } from './components/ChordGraph/ChordGraph';
 import { DebugPanel } from './components/DebugPanel/DebugPanel';
 import { HistoryGraph } from './components/HistoryGraph/HistoryGraph';
+import { createWsChordService } from './services/wsChordService';
 
 type Tab = 'live' | 'history';
 
@@ -23,7 +24,22 @@ const tabStyle = (active: boolean): React.CSSProperties => ({
 });
 
 function App() {
-  const { state, history, triggerNext, startAutoPlay, stopAutoPlay } = useChordProgression();
+  const [rawChord, setRawChord] = useState<any>(null);
+
+  const wsService = useMemo(() => {
+    const svc = createWsChordService(undefined, (d) => {
+      console.log('RAW CHORD FROM WS:', d);
+      setRawChord(d);
+    });
+    // connect to default ws://localhost:8000/ws
+    if (typeof window !== 'undefined') {
+      svc.connect();
+    }
+    return svc;
+  }, []);
+
+  const { state, history, triggerNext, startAutoPlay, stopAutoPlay } = useChordProgression(wsService as any);
+
   const [activeTab, setActiveTab] = useState<Tab>('live');
 
   if (!state) {
@@ -44,6 +60,11 @@ function App() {
 
   return (
     <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
+      {/* Raw chord debug overlay */}
+      <div style={{position: 'fixed', right: 16, top: 80, zIndex: 200, background: 'rgba(0,0,0,0.6)', color: '#fff', padding: 8, borderRadius: 8, fontSize: 12, maxWidth: 320}}>
+        <div style={{fontWeight: 700, marginBottom: 6}}>RAW CHORD</div>
+        <pre style={{whiteSpace: 'pre-wrap', margin: 0}}>{rawChord ? JSON.stringify(rawChord, null, 2) : '—'}</pre>
+      </div>
       {/* Tab bar */}
       <div style={{
         position: 'fixed',
